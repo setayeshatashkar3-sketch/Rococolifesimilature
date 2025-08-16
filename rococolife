@@ -1,0 +1,149 @@
+RococoLifeSim/
+ ├── project.godot
+ ├── scenes/
+ │    ├── Main.tscn
+ │    ├── Mansion.tscn
+ │    ├── Player.tscn
+ │    ├── WardrobeUI.tscn
+ │    └── WeatherManager.tscn
+ ├── scripts/
+ │    ├── player.gd
+ │    ├── wardrobe.gd
+ │    ├── weather.gd
+ │    └── mansion_builder.gd
+ ├── assets/
+ │    ├── sounds/
+ │    │    ├── footsteps.wav
+ │    │    ├── door_open.wav
+ │    │    ├── door_close.wav
+ │    │    └── ambient_nature.wav
+ │    └── textures/
+ │         ├── dummy_hair.png
+
+ │         ├── dummy_dress.png
+ │         ├── sky_day.png
+ │         └── sky_night.png
+
+[application]
+config/name="Rococo Life Sim"
+run/main_scene="res://scenes/Main.tscn"
+
+[rendering]
+environment/default_clear_color=Color(0.9,0.9,0.95)
+
+[gd_scene load_steps=2 format=3]
+
+[node name="Main" type="Node3D"]
+
+[node name="Mansion" parent="." instance=ExtResource("res://scenes/Mansion.tscn")]
+[node name="Player" parent="." instance=ExtResource("res://scenes/
+
+Player.tscn")]
+[node name="WardrobeUI" parent="." instance=ExtResource("res://scenes/WardrobeUI.tscn")]
+[node name="WeatherManager" parent="." instance=ExtResource("res://scenes/WeatherManager.tscn")]
+
+[node name="Audio" type="AudioStreamPlayer" parent="."]
+stream = ExtResource("res://assets/sounds/ambient_nature.wav")
+autoplay = true
+
+[gd_scene format=3]
+
+[node name="Mansion" type="Node3D"]
+script = ExtResource("res://scripts/mansion_builder.gd")
+
+
+extends Node3D
+
+func _ready():
+    # Prototype: just cubes for rooms
+    _make_room(Vector3(0,0,0), "Hall")
+    _make_room(Vector3(10,0,0), "Dining")
+    _make_room(Vector3(-10,0,0), "Library")
+    _make_room(Vector3(0,0,10), "Bedroom1")
+    _make_room(Vector3(0,0,-10), "Bedroom2")
+    _make_room(Vector3(20,0,0), "Kitchen")
+
+func _make_room(pos: Vector3, name: String):
+    var room = MeshInstance3D.new()
+    room.name = name
+    room.mesh = BoxMesh.new()
+    room.scale = Vector3(6,3,6)
+    room.translation = pos
+
+    add_child(room)
+
+[gd_scene format=3]
+
+[node name="Player" type="CharacterBody3D"]
+script = ExtResource("res://scripts/player.gd")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+translation = Vector3(0,2, -5)
+
+extends CharacterBody3D
+
+@export var speed := 5.0
+@export var jump_strength := 5.0
+
+var velocity: Vector3
+
+func _physics_process(delta):
+
+    var input_dir = Vector2(
+        Input.get_action_strength("move_right") - Input.get_action_strength("move_left"),
+        Input.get_action_strength("move_backward") - Input.get_action_strength("move_forward")
+    )
+    input_dir = input_dir.normalized()
+    velocity.x = input_dir.x * speed
+    velocity.z = input_dir.y * speed
+
+    if Input.is_action_just_pressed("jump") and is_on_floor():
+        velocity.y = jump_strength
+
+    velocity = move_and_slide(velocity, Vector3.UP)
+
+    if 
+
+Input.is_action_just_pressed("ui_accept"):
+        print("Interact pressed")
+
+[gd_scene format=3]
+
+[node name="WardrobeUI" type="CanvasLayer"]
+script = ExtResource("res://scripts/wardrobe.gd")
+
+[node name="Panel" type="Panel" parent="."]
+visible = false
+
+
+extends CanvasLayer
+
+var current_hair = 0
+var current_dress = 0
+var hairs = ["res://assets/textures/dummy_hair.png"]
+
+var dresses = ["res://assets/textures/dummy_dress.png"]
+
+func _input(event):
+    if event.is_action_pressed("toggle_wardrobe"):
+        $Panel.visible = !$Panel.visible
+
+func apply_customization(player):
+    # later you can swap Mesh or Material
+    print("Applying hair %s and dress %s" % [hairs[current_hair], dresses[current_dress]])
+
+[gd_scene format=3]
+
+[node name="WeatherManager" type="Node3D"]
+script = ExtResource("res://scripts/weather.gd")
+
+
+extends Node3D
+
+var states = ["Day", "Night", "Rain"]
+var current_state = 0
+
+func _process(delta):
+    if Input.is_action_just_pressed("toggle_weather"):
+        current_state = (current_state + 1) % states.size()
+        print("Weather -> %s" % states[current_state])
